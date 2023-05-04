@@ -1,0 +1,12 @@
+name: crontab
+host: 127.0.0.1
+port: 9999
+etcd:
+  end_points:
+    - 127.0.0.1:2379
+  dial_timeout: 5000
+mongodb:
+  uri: mongodb://127.0.0.1:27017
+  connnect_timeout: 5000
+
+
