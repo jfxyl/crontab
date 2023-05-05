@@ -20,7 +20,11 @@ func main() {
 		log.Fatalln(err)
 	}
 	//初始化mongodb
-
+	if err = initialize.InitMongo(); err != nil {
+		log.Fatalln(err)
+	}
 	//初始化http服务
-
+	if err = initialize.InitHttpServer(); err != nil {
+		log.Fatalln(err)
+	}
 }

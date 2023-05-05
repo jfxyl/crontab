@@ -5,7 +5,7 @@ etcd:
   end_points:
     - 127.0.0.1:2379
   dial_timeout: 5000
-mongodb:
+mongo:
   uri: mongodb://127.0.0.1:27017
   connnect_timeout: 5000
 
