@@ -1,11 +1,11 @@
-package config
+package common
 
-type EtcdConfig struct {
+type etcdConfig struct {
 	EndPoints   []string `mapstructure:"end_points" json:"end_points"`
 	DialTimeout int64    `mapstructure:"dial_timeout" json:"dial_timeout"`
 }
 
-type MongoConfig struct {
+type mongoConfig struct {
 	URI             string `mapstructure:"uri" json:"uri"`
 	ConnnectTimeout string `mapstructure:"connnect_timeout" json:"connnect_timeout"`
 }
@@ -15,6 +15,6 @@ type Config struct {
 	Host string `mapstructure:"host" json:"host"`
 	Port int    `mapstructure:"port" json:"port"`
 
-	EtcdConfig  EtcdConfig  `mapstructure:"etcd" json:"etcd"`
-	MongoConfig MongoConfig `mapstructure:"mongo" json:"mongo"`
+	EtcdConfig  etcdConfig  `mapstructure:"etcd" json:"etcd"`
+	MongoConfig mongoConfig `mapstructure:"mongo" json:"mongo"`
 }

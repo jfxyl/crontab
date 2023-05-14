@@ -1,8 +1,8 @@
-package initialize
+package config
 
 import (
-	"crontab/master/config"
-	"crontab/master/global"
+	"crontab/internal/common"
+	"crontab/internal/global"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -12,7 +12,7 @@ func InitConfig() (err error) {
 	var (
 		v *viper.Viper
 	)
-	global.Config = &config.Config{}
+	global.Config = &common.Config{}
 	v = viper.New()
 	v.SetConfigFile(global.ConfigPath)
 	//读取配置文件
@@ -37,7 +37,7 @@ func InitConfig() (err error) {
 //读取配置文件
 func readConfig(v *viper.Viper) (err error) {
 	var (
-		config config.Config
+		config common.Config
 	)
 	//读取配置文件
 	if err = v.ReadInConfig(); err != nil {

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Golang分布式Crontab</title>
+    <!-- bootstrap + jquery -->
+
+    <!-- vuejs  , reactjs , angular -->
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- 时间选择器前置脚本 -->
+
+    <script src="https://cdn.bootcss.com/moment.js/2.22.1/moment-with-locales.min.js"></script>
+    <link href="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+</head>
+<body>
+<div class="container-fluid">
+    <!-- 页头 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h1>管理后台<small>Golang分布式Crontab</small></h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能按钮 -->
+    <div class="row">
+        <div class="col-md-12">
+            <button type="button" class="btn btn-primary" id="new-job">新建任务</button>
+            <button type="button" class="btn btn-success" id="list-worker">健康节点</button>
+        </div>
+    </div>
+
+    <!-- 任务列表 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default" style="margin-top: 20px">
+                <div class="panel-body">
+                    <table id="job-list"  class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>任务名称</th>
+                            <th>shell命令</th>
+                            <th>cron表达式</th>
+                            <th>任务操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- position: fixed -->
+<div id="edit-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">编辑任务</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="edit-name">任务名称</label>
+                        <input type="text" class="form-control" id="edit-name" placeholder="任务名称">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-command">shell命令</label>
+                        <input type="text" class="form-control" id="edit-command" placeholder="shell命令">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-cronExpr">cron表达式</label>
+                        <input type="text" class="form-control" id="edit-cronExpr" placeholder="cron表达式">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="save-job">保存</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!--  日志模态框 -->
+<div id="log-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">任务日志</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-inline text-right">
+                    <div class="form-group">
+                        <label for="start-time">开始时间</label>
+                        <div class="input-group date" id="start-time-picker">
+                            <input type="text" class="form-control" id="start-time" name="start-time">
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-time">结束时间</label>
+                        <div class="input-group date" id="end-time-picker">
+                            <input type="text" class="form-control" id="end-time" name="end-time">
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <button class="btn btn-info" type="button" id="log-search">查询</button>
+                </form>
+                <table id="log-list" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>shell命令</th>
+                        <th>错误原因</th>
+                        <th>脚本输出</th>
+                        <th>计划开始时间</th>
+                        <th>实际调度时间</th>
+                        <th>开始执行时间</th>
+                        <th>执行结束时间</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+                <nav id="pagination" class="pagination"></nav>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<!--  健康节点模态框 -->
+<div id="worker-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">健康节点</h4>
+            </div>
+            <div class="modal-body">
+                <table id="worker-list" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>节点IP</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<!--  当前执行任务模态框 -->
+<div id="executing-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">当前执行任务</h4>
+            </div>
+            <div class="modal-body">
+                <table id="executing-list" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>时间节点</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<script>
+    var currentJob = ""
+    // 页面加载完成后, 回调函数
+    $(document).ready(function() {
+        function renderPagination(total, limit, currentPage) {
+            var pageCount = Math.ceil(total / limit);
+            if (pageCount <= 1) {
+                return;
+            }
+
+            var pagination = document.getElementById("pagination");
+            pagination.innerHTML = "";
+
+            var ul = document.createElement("ul");
+            ul.classList.add("pagination");
+
+            // 上一页
+            if (currentPage > 1) {
+                var prevLi = createPageLi("上一页", currentPage - 1);
+                ul.appendChild(prevLi);
+            } else {
+                var disabledPrevLi = createDisabledPageLi("上一页");
+                ul.appendChild(disabledPrevLi);
+            }
+
+            // 当前页及前后两个页码
+            var startPage = Math.max(currentPage - 2, 1);
+            var endPage = Math.min(currentPage + 2, pageCount);
+
+            // 添加起始页码
+            if (startPage > 1) {
+                var startLi = createPageLi(1, 1);
+                ul.appendChild(startLi);
+                if (startPage > 2) {
+                    var ellipsisLi = createEllipsisLi();
+                    ul.appendChild(ellipsisLi);
+                }
+            }
+
+            // 添加当前页及前后两个页码
+            for (var i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    var activeLi = createActivePageLi(i);
+                    ul.appendChild(activeLi);
+                } else {
+                    var pageLi = createPageLi(i, i);
+                    ul.appendChild(pageLi);
+                }
+            }
+
+            // 添加结束页码
+            if (endPage < pageCount) {
+                if (endPage < pageCount - 1) {
+                    var ellipsisLi = createEllipsisLi();
+                    ul.appendChild(ellipsisLi);
+                }
+                var endLi = createPageLi(pageCount, pageCount);
+                ul.appendChild(endLi);
+            }
+
+            // 下一页
+            if (currentPage < pageCount) {
+                var nextLi = createPageLi("下一页", currentPage + 1);
+                ul.appendChild(nextLi);
+            } else {
+                var disabledNextLi = createDisabledPageLi("下一页");
+                ul.appendChild(disabledNextLi);
+            }
+
+            // 添加指定页码跳转的输入框
+            var inputGroup = createInputGroup(pageCount);
+            ul.appendChild(inputGroup);
+
+            pagination.appendChild(ul);
+
+            // 为页码添加点击事件处理程序
+            var pageLinks = pagination.querySelectorAll("a.page-link");
+            pageLinks.forEach(function(link) {
+                link.addEventListener("click", function(event) {
+                    event.preventDefault();
+                    var pageNumber = parseInt(this.getAttribute("data-page"));
+                    handlePageClick(pageNumber);
+                });
+            });
+
+            // 为跳转按钮添加点击事件处理程序
+            var jumpButton = pagination.querySelector("button.jump-button");
+            jumpButton.addEventListener("click", function(event) {
+                var input = pagination.querySelector("input.jump-input");
+                var pageNumber = parseInt(input.value);
+                if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= pageCount) {
+                    handlePageClick(pageNumber);
+                }
+            });
+        }
+
+        function handlePageClick(pageNumber) {
+            logSearch(pageNumber)
+        }
+
+        function createEllipsisLi() {
+            var li = document.createElement("li");
+            li.classList.add("page-item");
+            var span = document.createElement("span");
+            span.classList.add("page-link");
+            span.textContent = "...";
+            li.appendChild(span);
+            return li;
+        }
+
+        function createPageLi(text, pageNumber) {
+            var li = document.createElement("li");
+            li.classList.add("page-item");
+            var a = document.createElement("a");
+            a.classList.add("page-link");
+            a.href = "#";  // 使用 "#" 作为链接，防止页面跳转
+            a.textContent = text;
+            a.setAttribute("data-page", pageNumber);  // 添加自定义属性，存储页码信息
+            li.appendChild(a);
+            return li;
+        }
+
+        function createDisabledPageLi(text) {
+            var li = document.createElement("li");
+            li.classList.add("page-item");
+            li.classList.add("disabled");
+            var span = document.createElement("span");
+            span.classList.add("page-link");
+            span.textContent = text;
+            li.appendChild(span);
+            return li;
+        }
+
+        function createActivePageLi(pageNumber) {
+            var li = document.createElement("li");
+            li.classList.add("page-item");
+            li.classList.add("active");
+            var span = document.createElement("span");
+            span.classList.add("page-link");
+            span.textContent = pageNumber;
+            li.appendChild(span);
+            return li;
+        }
+        function createInputGroup(totalPages) {
+            var inputGroup = document.createElement('div');
+            inputGroup.classList.add('input-group', 'col-md-2');
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.classList.add('form-control');
+            input.placeholder = '跳转到';
+            input.classList.add("jump-input");
+            inputGroup.appendChild(input);
+
+            var span = document.createElement('span');
+            span.classList.add('input-group-btn');
+
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.classList.add('btn', 'btn-default',"jump-button");
+            button.textContent = 'Go!';
+            span.appendChild(button);
+
+            inputGroup.appendChild(span);
+
+            return inputGroup;
+        }
+
+        // 时间格式化函数
+        function timeFormat(millsecond) {
+            // 前缀补0: 2018-08-07 08:01:03.345
+            function paddingNum(num, n) {
+                var len = num.toString().length
+                while (len < n) {
+                    num = '0' + num
+                    len++
+                }
+                return num
+            }
+            var date = new Date(millsecond)
+            var year = date.getFullYear()
+            var month = paddingNum(date.getMonth() + 1, 2)
+            var day = paddingNum(date.getDate(), 2)
+            var hour = paddingNum(date.getHours(), 2)
+            var minute = paddingNum(date.getMinutes(), 2)
+            var second = paddingNum(date.getSeconds(), 2)
+            var millsecond = paddingNum(date.getMilliseconds(), 3)
+            return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second + "." + millsecond
+        }
+
+        function getCurrentDate() {
+            var currentDate = new Date();
+            var year = currentDate.getFullYear();
+            var month = ('0' + (currentDate.getMonth() + 1)).slice(-2);
+            var day = ('0' + currentDate.getDate()).slice(-2);
+            return year + '-' + month + '-' + day;
+        }
+        function logSearch(page){
+            // 获取任务名
+            var start = $('#start-time-picker').datetimepicker('viewDate').format('YYYY-MM-DD HH:mm:ss');
+            var end = $('#end-time-picker').datetimepicker('viewDate').format('YYYY-MM-DD HH:mm:ss');
+            // 请求/job/log接口
+            $.ajax({
+                url: "/job/log",
+                dataType: 'json',
+                data: {name: currentJob,start:start,end:end,page:page,limit:10},
+                success: function(resp) {
+                    if (resp.errno != 0) {
+                        return
+                    }
+                    $('#log-list tbody').empty()
+                    // 遍历日志
+                    var logList = resp.data.data
+                    for (var i = 0; i < logList.length; ++i) {
+                        var log = logList[i]
+                        var tr = $('<tr>')
+                        tr.append($('<td>').html(log.command))
+                        tr.append($('<td>').html(log.err))
+                        tr.append($('<td>').text(log.output))
+                        tr.append($('<td>').html(timeFormat(log.planTime)))
+                        tr.append($('<td>').html(timeFormat(log.schedulerTime)))
+                        tr.append($('<td>').html(timeFormat(log.startTime)))
+                        tr.append($('<td>').html(timeFormat(log.endTime)))
+                        $('#log-list tbody').append(tr)
+                    }
+                    renderPagination(resp.data.total, 10, page);
+                }
+            })
+        }
+
+        // 1, 绑定按钮的事件处理函数
+        // 用javascript委托机制, DOM事件冒泡的一个关键原理
+
+        // 编辑任务
+        $("#job-list").on("click", ".edit-job", function(event) {
+            // 取当前job的信息，赋值给模态框的input
+            $('#edit-name').val($(this).parents('tr').children('.job-name').text())
+            $('#edit-command').val($(this).parents('tr').children('.job-command').text())
+            $('#edit-cronExpr').val($(this).parents('tr').children('.job-cronExpr').text())
+            // 弹出模态框
+            $('#edit-modal').modal('show')
+        })
+        // 删除任务
+        $("#job-list").on("click", ".delete-job", function(event) { // javascript bind
+            var jobName = $(this).parents("tr").children(".job-name").text()
+            $.ajax({
+                url: '/job/delete',
+                type: 'post',
+                dataType: 'json',
+                data: {name: jobName},
+                complete: function() {
+                    window.location.reload()
+                }
+            })
+        })
+
+        // 执行中按钮
+        $("#job-list").on("click", ".list-executing", function(event) {
+            currentJob = $(this).parents('tr').children('.job-name').text()
+            // 清空现有table
+            $('#executing-list tbody').empty()
+            // 拉取节点
+            $.ajax({
+                url: '/job/executings',
+                dataType: 'json',
+                data: {name: currentJob},
+                success: function(resp) {
+                    if (resp.errno != 0) {
+                        return
+                    }
+                    var executings = resp.data
+                    // 遍历每个IP, 添加到模态框的table中
+                    for (var i = 0; i < executings.length; ++i) {
+                        var timePoint = executings[i]
+                        var tr = $('<tr>')
+                        tr.append($('<td class="time-point">').html(timePoint))
+                        tr.append($('<td>').html('<button class="btn btn-warning kill-job">强杀</button>'))
+                        $('#executing-list tbody').append(tr)
+                    }
+                }
+            })
+            // 弹出模态框
+            $('#executing-modal').modal('show')
+        })
+        // 杀死任务
+        $("#executing-list").on("click", ".kill-job", function(event) {
+            var timePoint = $(this).parents("tr").children(".time-point").text()
+            $.ajax({
+                url: '/job/kill',
+                type: 'post',
+                dataType: 'json',
+                data: {name:currentJob,time:timePoint},
+                success: function(resp) {
+                    if (resp.errno != 0) {
+                        return
+                    }
+                    alert("信号已发送")
+                }
+                // complete: function() {
+                //     window.location.reload()
+                //     window.location.reload()
+                // }
+            })
+        })
+        // 保存任务
+        $('#save-job').on('click', function() {
+            var jobInfo = {name: $('#edit-name').val(), command: $('#edit-command').val(), cronExpr: $('#edit-cronExpr').val()}
+            $.ajax({
+                url: '/job/save',
+                type: 'post',
+                dataType: 'json',
+                data: {job: JSON.stringify(jobInfo)},
+                complete: function() {
+                    window.location.reload()
+                }
+            })
+        })
+        // 新建任务
+        $('#new-job').on('click', function() {
+            $('#edit-name').val("")
+            $('#edit-command').val("")
+            $('#edit-cronExpr').val("")
+            $('#edit-modal').modal('show')
+        })
+        // 查看任务日志
+        $("#job-list").on("click", ".log-job", function(event) {
+            currentJob = $(this).parents('tr').children('.job-name').text()
+            // 清空日志列表
+            $('#log-list tbody').empty()
+            logSearch(1)
+            // 弹出模态框
+            $('#log-modal').modal('show')
+        })
+
+        $("#log-search").on("click", function(event) {
+            logSearch(1)
+        })
+
+        // 健康节点按钮
+        $('#list-worker').on('click', function() {
+            // 清空现有table
+            $('#worker-list tbody').empty()
+            // 拉取节点
+            $.ajax({
+                url: '/worker/list',
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.errno != 0) {
+                        return
+                    }
+
+                    var workerList = resp.data
+                    // 遍历每个IP, 添加到模态框的table中
+                    for (var i = 0; i < workerList.length; ++i) {
+                        var workerIP = workerList[i]
+                        var tr = $('<tr>')
+                        tr.append($('<td>').html(workerIP))
+                        $('#worker-list tbody').append(tr)
+                    }
+                }
+            })
+
+            // 弹出模态框
+            $('#worker-modal').modal('show')
+        })
+
+        // 2，定义一个函数，用于刷新任务列表
+        function rebuildJobList() {
+            // /job/list
+            $.ajax({
+                url: '/job/list',
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.errno != 0) {  // 服务端出错了
+                        return
+                    }
+                    // 任务数组
+                    var jobList = resp.data
+                    // 清理列表
+                    $('#job-list tbody').empty()
+                    // 遍历任务, 填充table
+                    for (var i = 0; i < jobList.length; ++i) {
+                        var job = jobList[i];
+                        var tr = $("<tr>")
+                        tr.append($('<td class="job-name">').html(job.name))
+                        tr.append($('<td class="job-command">').html(job.command))
+                        tr.append($('<td class="job-cronExpr">').html(job.cronExpr))
+                        var toolbar = $('<div class="btn-toolbar">')
+                            .append('<button class="btn btn-info edit-job">编辑</button>')
+                            .append('<button class="btn btn-danger delete-job">删除</button>')
+                            .append('<button class="btn btn-warning list-executing">执行中</button>')
+                            .append('<button class="btn btn-success log-job">日志</button>')
+                        tr.append($('<td>').append(toolbar))
+                        $("#job-list tbody").append(tr)
+                    }
+                }
+            })
+        }
+        $('#start-time-picker').datetimepicker({
+            format: 'YYYY-MM-DD HH:mm:ss',
+            defaultDate:getCurrentDate() + " 00:00:00",
+            showClear: true,
+            icons: {
+                time: 'glyphicon glyphicon-time',
+                date: 'glyphicon glyphicon-calendar',
+                up: 'glyphicon glyphicon-chevron-up',
+                down: 'glyphicon glyphicon-chevron-down',
+                previous: 'glyphicon glyphicon-chevron-left',
+                next: 'glyphicon glyphicon-chevron-right',
+                today: 'glyphicon glyphicon-screenshot',
+                clear: 'glyphicon glyphicon-trash',
+                close: 'glyphicon glyphicon-remove'
+            }
+        });
+        // 初始化结束时间选择器
+        $('#end-time-picker').datetimepicker({
+            format: 'YYYY-MM-DD HH:mm:ss',
+            defaultDate:getCurrentDate() + " 23:59:59",
+            showClear: true,
+            icons: {
+                time: 'glyphicon glyphicon-time',
+                date: 'glyphicon glyphicon-calendar',
+                up: 'glyphicon glyphicon-chevron-up',
+                down: 'glyphicon glyphicon-chevron-down',
+                previous: 'glyphicon glyphicon-chevron-left',
+                next: 'glyphicon glyphicon-chevron-right',
+                today: 'glyphicon glyphicon-screenshot',
+                clear: 'glyphicon glyphicon-trash',
+                close: 'glyphicon glyphicon-remove'
+            }
+        });
+        $("#start-time-picker").on("dp.change", function (e) {
+            $('#end-time-picker').data("DateTimePicker").minDate(e.date);
+        });
+        $("#end-time-picker").on("dp.change", function (e) {
+            $('#start-time-picker').data("DateTimePicker").maxDate(e.date);
+        });
+        rebuildJobList()
+    })
+</script>
+
+</body>
+</html>

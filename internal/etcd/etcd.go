@@ -1,7 +1,7 @@
-package initialize
+package etcd
 
 import (
-	"crontab/master/global"
+	"crontab/internal/global"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"time"
 )

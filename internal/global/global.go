@@ -1,7 +1,7 @@
 package global
 
 import (
-	"crontab/master/config"
+	"crontab/internal/common"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -9,7 +9,7 @@ import (
 var (
 	ConfigPath string
 
-	Config *config.Config
+	Config *common.Config
 
 	EtcdClient *clientv3.Client
 

@@ -1,8 +1,8 @@
-package initialize
+package mongo
 
 import (
 	"context"
-	"crontab/master/global"
+	"crontab/internal/global"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
