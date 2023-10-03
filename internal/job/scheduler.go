@@ -127,12 +127,13 @@ func (s *Scheduler) TryScheduler() (schedulerAfter time.Duration) {
 	for _, jobSchedulerPlan = range G_JobScheduler.JobPlanTable {
 		if jobSchedulerPlan.NextTime.Equal(now) || jobSchedulerPlan.NextTime.Before(now) {
 			jobExecuteInfo = G_JobExecutor.BuildJobExecuteInfo(jobSchedulerPlan)
+			jobExecuteInfoCopy := *jobExecuteInfo
 			if timeExecuteMap, exists = s.JobExecutingTable[jobSchedulerPlan.Job.Name]; !exists {
 				timeExecuteMap = make(map[string]*JobExecuteInfo)
 				s.JobExecutingTable[jobSchedulerPlan.Job.Name] = timeExecuteMap
 			}
 			s.JobExecutingTable[jobSchedulerPlan.Job.Name][jobSchedulerPlan.NextTime.Format(common.YMDHIS)] = jobExecuteInfo
-			go G_JobExecutor.Run(jobExecuteInfo)
+			go G_JobExecutor.Run(&jobExecuteInfoCopy)
 			jobSchedulerPlan.NextTime = jobSchedulerPlan.Expr.Next(now)
 		}
 		if nearTime == nil || jobSchedulerPlan.NextTime.Before(*nearTime) {
