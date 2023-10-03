@@ -1,0 +1,38 @@
+version: '3.8'
+
+networks:
+  crontab:
+
+volumes:
+  etcddata:
+
+services:
+  mongo:
+    image: mongo
+    container_name: crontab-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - crontab
+
+  etcd:
+    image: bitnami/etcd:3.4.27
+    container_name: crontab-etcd
+    restart: always
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    networks:
+      - crontab
+    environment:
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ALLOW_NONE_AUTHENTICATION: yes
+
+  buildtmp:
+    build:
+      context: .
+      dockerfile: app.dockerfile
+    container_name: buildtmp
+
