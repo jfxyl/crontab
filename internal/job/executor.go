@@ -66,7 +66,7 @@ func (s *Executor) Run(jobExecuteInfo *JobExecuteInfo) {
 //}
 
 type JobExecuteInfo struct {
-	Job        *Job
+	Job        Job
 	PlanTime   time.Time
 	RealTime   time.Time
 	Lock       *Lock
@@ -84,7 +84,7 @@ type JobExecuteResult struct {
 
 func (s *Executor) BuildJobExecuteInfo(jobSchedulerPlan *JobSchedulerPlan) (jobExecuteInfo *JobExecuteInfo) {
 	jobExecuteInfo = &JobExecuteInfo{
-		Job:      jobSchedulerPlan.Job,
+		Job:      *jobSchedulerPlan.Job,
 		PlanTime: jobSchedulerPlan.NextTime,
 		RealTime: time.Now(),
 	}
