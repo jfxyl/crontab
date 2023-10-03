@@ -206,9 +206,9 @@
     $(document).ready(function() {
         function renderPagination(total, limit, currentPage) {
             var pageCount = Math.ceil(total / limit);
-            if (pageCount <= 1) {
-                return;
-            }
+            // if (pageCount <= 1) {
+            //     return;
+            // }
 
             var pagination = document.getElementById("pagination");
             pagination.innerHTML = "";
