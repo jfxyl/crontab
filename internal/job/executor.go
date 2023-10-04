@@ -45,7 +45,7 @@ func (s *Executor) Run(jobExecuteInfo *JobExecuteInfo) {
 			log.Fatal("当前系统可能不支持")
 		}
 		output, err = cmd.CombinedOutput()
-		fmt.Println("output", output)
+		fmt.Println("output", string(output))
 		result.Output = output
 		result.Err = err
 	}

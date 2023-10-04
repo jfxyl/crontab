@@ -58,7 +58,9 @@ func (s *Scheduler) HandleJobEvent(jobEvent *JobEvent) (err error) {
 	case common.JOB_EVENT_KILL:
 		if jobExecuteInfo, jobExecuting = s.JobExecutingTable[jobEvent.Job.Name][jobEvent.Time]; jobExecuting {
 			jobExecuteInfo.CancelFunc()
-			jobExecuteInfo.Lock.UnLock()
+			if jobExecuteInfo.Lock != nil {
+				jobExecuteInfo.Lock.UnLock()
+			}
 		}
 	}
 	return

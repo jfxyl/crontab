@@ -48,6 +48,7 @@ func (s *Manager) WatchJob() (err error) {
 		watchChan = global.EtcdClient.Watch(context.Background(), common.JOB_SAVE_DIR, clientv3.WithPrefix(), clientv3.WithPrevKV())
 		for watchResp = range watchChan {
 			for _, watchEvent = range watchResp.Events {
+				job = &Job{}
 				switch watchEvent.Type {
 				case mvccpb.PUT:
 					if err = json.Unmarshal(watchEvent.Kv.Value, job); err != nil {

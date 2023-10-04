@@ -7,5 +7,5 @@ docker-compose -f docker-compose-build.yaml   up --build -d
 #nohup ./worker.exe &
 
 docker cp buildtmp:/go/bin/master ./ && docker cp buildtmp:/go/bin/worker ./
-nohup ./master &
-nohup ./worker &
+nohup ./master > nohup-master.out &
+nohup ./worker > nohup-worker.out &

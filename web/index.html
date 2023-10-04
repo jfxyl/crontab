@@ -206,12 +206,11 @@
     $(document).ready(function() {
         function renderPagination(total, limit, currentPage) {
             var pageCount = Math.ceil(total / limit);
-            // if (pageCount <= 1) {
-            //     return;
-            // }
+            if (pageCount <= 1) {
+                return;
+            }
 
             var pagination = document.getElementById("pagination");
-            pagination.innerHTML = "";
 
             var ul = document.createElement("ul");
             ul.classList.add("pagination");
@@ -410,7 +409,9 @@
                     if (resp.errno != 0) {
                         return
                     }
+                    // 清空日志列表
                     $('#log-list tbody').empty()
+                    $("#pagination").empty();
                     // 遍历日志
                     var logList = resp.data.data
                     for (var i = 0; i < logList.length; ++i) {
@@ -527,8 +528,6 @@
         // 查看任务日志
         $("#job-list").on("click", ".log-job", function(event) {
             currentJob = $(this).parents('tr').children('.job-name').text()
-            // 清空日志列表
-            $('#log-list tbody').empty()
             logSearch(1)
             // 弹出模态框
             $('#log-modal').modal('show')
